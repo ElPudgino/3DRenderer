@@ -7,8 +7,8 @@ import pygame
 import numpy as np
 Map = []
 DepthBuffer = []
-MapWidth = 1000
-MapHeight = 1000
+MapWidth = 500
+MapHeight = 500
 CamOffsetX = MapWidth/2
 CamOffsetY = MapHeight/2
 CamOffsetZ = MapWidth * 0.35#0.156
@@ -102,8 +102,8 @@ def Update():
         for dy in range(MapHeight):
             tb.append('a')
         DepthBuffer.append(tb)
-    Draw3D(meshtest,[0,0,0],(0,0,255))
-    Draw3D(mesh,[0,0,20],(0,0,0))
+    Draw3D(meshtest,[0,0,0],[180,180,180])
+    #Draw3D(mesh,[0,0,20],[255,0,0])
     #PrintMap()
 
 def ClearMap():
@@ -204,6 +204,7 @@ def DrawTriangle(Vertices,color): #lists of 3 verts and points
     global ViewOffsetY
     global ViewOffsetZ
     global MapWidth
+    global LightSourcePos
     global MapHeight
     inpointsY1 = []
     inpointsX1 = []
@@ -217,11 +218,43 @@ def DrawTriangle(Vertices,color): #lists of 3 verts and points
     allpoints = []
     prpoints = []
     Points = []
+    Center = [0,0,0]
     for vert in Vertices:
         pX = CamOffsetZ * (vert[0]+ViewOffsetX - CamOffsetX) / (vert[2] + ViewOffsetZ) + CamOffsetX
         pY = CamOffsetZ * (vert[1]+ViewOffsetY - CamOffsetY) / (vert[2] + ViewOffsetZ) + CamOffsetY
         Points.append([pX,pY,vert[2]])
+    colortemp = [0,0,0]
+    Center[0] = (Vertices[0][0] + Vertices[1][0] + Vertices[2][0]) / 3
+    Center[1] = (Vertices[0][1] + Vertices[1][1] + Vertices[2][1]) / 3
+    Center[2] = (Vertices[0][2] + Vertices[1][2] + Vertices[2][2]) / 3
 
+    l = Center[0] - LightSourcePos[0] 
+    m = Center[1] - LightSourcePos[1]
+    n = Center[2] - LightSourcePos[2]
+
+    #l = -1
+    #m = 3
+    #n = 2
+
+   
+    
+    vect1 = Quaternion(0,Vertices[1][0] - Vertices[0][0],Vertices[1][1] - Vertices[0][1],Vertices[1][2] - Vertices[0][2])
+    vect2 = Quaternion(0,Vertices[2][0] - Vertices[0][0],Vertices[2][1] - Vertices[0][1],Vertices[2][2] - Vertices[0][2])
+
+    vect1.MultiplyBy(vect2)
+
+    plane = [vect1.i,vect1.j,vect1.k,0]
+
+    plane[3] = 0 - (vect1.i + vect1.j + vect1.k)
+
+    AngleSine = abs(plane[0] * l + plane[1] * m + plane[2] * n) / (np.sqrt(plane[0]**2 + plane[1]**2 + plane[2]**2) * np.sqrt(l**2 + n**2 + m**2))
+
+    #LightAngle = np.arcsin(AngleSine)
+
+    colortemp[0] = color[0] * AngleSine
+    colortemp[1] = color[1] * AngleSine
+    colortemp[2] = color[2] * AngleSine
+    
     X1 = Points[0][0]
     X2 = Points[1][0]
     X3 = Points[2][0]
@@ -352,7 +385,7 @@ def DrawTriangle(Vertices,color): #lists of 3 verts and points
             W3 = 1 - W1 - W2
             mx[2] = Z1 * W1 + Z2 * W2 + Z3 * W3
             if DepthBuffer[mx[0] ][mx[1] ] == 'a' or DepthBuffer[mx[0] ][mx[1] ] >= mx[2]:
-                screen.set_at((mx[0],  mx[1]), color)
+                screen.set_at((mx[0],  mx[1]), colortemp)
                 DepthBuffer[mx[0] ][mx[1] ] = mx[2]  
             mx[0] = mx[0] - 1
         #DrawLine(mi,mx)
@@ -370,6 +403,7 @@ def Draw3D(mesh,position,color):
     global ViewOffsetX
     global ViewOffsetY
     global ViewOffsetZ
+    
     Listofpoints = []
     x = 0
     y = 1
@@ -441,16 +475,16 @@ def RotateMesh(mesh,angle,axis): #angle is float , axis is quaternion
 meshtest = mesh([[25,15,15] , [25,15,-15] , [25,-15,15] , [25,-15,-15] ,
                      [-25,15,15] , [-25,15,-15], [-25,-15,15] , [-25,-15,-15]],
                     [[0,1] , [0,4] , [0,2] , [1,3] , [1,5] , [2,3] ,
-                    [2,6] , [3,7] , [4,6] , [4,5] , [5,7] , [6,7]],[[0,1,5]])
+                    [2,6] , [3,7] , [4,6] , [4,5] , [5,7] , [6,7]],[[0,5,1],[0,4,5],[0,2,1],[2,1,3],[4,5,6],[2,3,6],[3,5,7],[5,6,7],[3,6,7],[4,6,0],[5,1,3],[6,0,2]])
 
-mesh = mesh([[25,15,50] , [25,15,20] , [25,-15,50] , [25,-15,20] ,
-                     [-25,15,50] , [-25,15,20], [-25,-15,50] , [-25,-15,20]],
+mesh = mesh([[25,15,50] , [25,15,17] , [25,-15,50] , [25,-15,17] ,
+                     [-25,15,50] , [-25,15,17], [-25,-15,50] , [-25,-15,17]],
                     [[0,1] , [0,4] , [0,2] , [1,3] , [1,5] , [2,3] ,
                     [2,6] , [3,7] , [4,6] , [4,5] , [5,7] , [6,7]],[[0,1,5]])
 TestAxis = Quaternion(0,0.6666,-0.6666,-0.3333)
 XAxis = Quaternion(0,1,0,0)
 YAxis = Quaternion(0,0,1,0)
-
+LightSourcePos = [30,170,-80]
 mode = 'mode ' + str(MapWidth) + ',' + str(MapHeight)    
 cmd = mode
 os.system(cmd)
