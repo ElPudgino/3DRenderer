@@ -7,8 +7,8 @@ import pygame
 import numpy as np
 Map = []
 DepthBuffer = []
-MapWidth = 500
-MapHeight = 500
+MapWidth = 400
+MapHeight = 400
 CamOffsetX = MapWidth/2
 CamOffsetY = MapHeight/2
 CamOffsetZ = MapWidth * 0.35#0.156
